@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "stack.h"
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdbool.h>

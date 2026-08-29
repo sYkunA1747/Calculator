@@ -68,20 +68,6 @@ typedef struct {
 } Token;
 
 
-typedef struct {
-    Token *items;
-    int capacity;
-    int top;
-} TokenStack;
-
-
-typedef enum {
-    STACK_OK = 0,
-    STACK_ERROR_NULL,
-    STACK_ERROR_OVERFLOW,
-    STACK_ERROR_UNDERFLOW,
-    STACK_ERROR_NO_MEMORY
-} StackStatus;
 
 bool isOperator(TokenType type);
 bool isBinaryOperator(TokenType type);
@@ -92,16 +78,8 @@ bool isParen(TokenType type);
 int getOperatorPriority(TokenType type);
 
 Token *tokenize(const char *expr, int *token_count);
-void freeTokens(Token *tokens, int count);
+void freeTokens(Token *tokens);
 
-
-/* Prototype stack operations*/
-StackStatus stackInit(TokenStack *stack, int capacity);
-StackStatus stackPush(TokenStack *stack, Token token);
-StackStatus stackPop(TokenStack *stack, Token *outToken);
-StackStatus stackPeek(const TokenStack *stack, Token *outToken);
-bool stackIsEmpty(const TokenStack *stack);
-StackStatus stackFree(TokenStack *stack);
 
 
 TokenType getFunction(const char *name);

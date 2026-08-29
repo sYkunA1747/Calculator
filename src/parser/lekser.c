@@ -1,5 +1,6 @@
 #include "parser.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
@@ -7,6 +8,7 @@
 
 
 Token *tokenize(const char *expr, int *tokenCount){
+    if(expr == NULL || tokenCount == NULL) return NULL;
     int i = 0, capacity = 10, index = 0;
     Token *tokens = malloc(capacity*(sizeof(Token)));
     if(tokens == NULL) return NULL;
@@ -23,17 +25,23 @@ Token *tokenize(const char *expr, int *tokenCount){
         }
 
 
-        if(isspace(expr[i])){
+        if(isspace((unsigned char)expr[i])){
             i++;
             continue;
-        } else if(isdigit(expr[i]) || expr[i] == '.'){
+        } else if(isdigit((unsigned char)expr[i]) || expr[i] == '.'){
             char*end;
             tokens[index].type = TOKEN_NUMBER;
             tokens[index].data.number = strtod(&expr[i], &end);
+            if(end == &expr[i]){
+                tokens[index].type = TOKEN_UNKNOWN;
+                i++;
+                index++;
+                continue;
+            }
             index++;
             i = end - expr;
             continue;
-        } else if(isalpha(expr[i])){
+        } else if(isalpha((unsigned char)expr[i])){
             int startIndex = i; 
             while(expr[i] != '\0' && isalpha((unsigned char)expr[i])){
                 i++;
@@ -48,7 +56,12 @@ Token *tokenize(const char *expr, int *tokenCount){
             index++;
             continue;
         }  else if(getOperatorFunctionType(expr[i]) != TOKEN_UNKNOWN){
-            tokens[index].type = getOperatorFunctionType(expr[i]);
+            TokenType openType = getOperatorFunctionType(expr[i]); 
+            if(openType == TOKEN_MINUS){
+                if(index == 0 || isOperator(tokens[index-1].type) || tokens[index-1].type == TOKEN_OPEN_PAREN)
+                    openType = TOKEN_UNAR_MINUS;
+            }
+            tokens[index].type = openType;
             index++;
             i++;
             continue;
@@ -89,7 +102,7 @@ TokenType getOperatorFunctionType(char ch){
 }
 
 
-void freeTokens(Token *tokens, int count){
+void freeTokens(Token *tokens){
     assert(tokens != NULL);
     free(tokens);
 }
