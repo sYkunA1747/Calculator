@@ -3,6 +3,8 @@
 #include <math.h>
 
 static double normalize_angle(double angle){
+    if(!isfinite(angle)) return NAN;
+    angle=fmod(angle,2.0*M_PI);
     while(angle > M_PI) angle-=2.0*M_PI;
     while(angle < -M_PI) angle+=2.0*M_PI;
     return angle;

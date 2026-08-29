@@ -12,10 +12,10 @@ bool TestParseOneStr(void){
 }
 
 bool TestParseTwoStr(void){
-    return ASSERT_STR_EQ("tg(2A) - pow(A,2)", "tg(2*a)-pow(a,2)");
+    return ASSERT_STR_EQ("tan(2A) - pow(A,2)", "tg(2*a)-pow(a,2)");
 }
 
 bool TestParseThreeStr(void){
-    return ASSERT_STR_EQ("cos(2*A) + 2^C - sqr(2)", "cos(2*a)+2^c-sqr(2)");
+    return ASSERT_STR_EQ("cos(2*A) + 2^C - nthroot(2)", "cos(2*a)+2^c-sqr(2)");
 }
 
