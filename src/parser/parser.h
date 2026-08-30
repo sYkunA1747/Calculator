@@ -1,6 +1,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include "../errorhandling/errorCode.h"
 #include <stdbool.h>
 
 #define MAX_TOKEN_LEN 32
@@ -10,6 +11,8 @@
 #define PRIORITY_POW_NTHROOT 3
 #define PRIORITY_UNAR_MINUS 4
 #define PRIORITY_UNKNOWN 0
+
+
 
 #ifndef FUNCTION_LIST
 #define FUNCTION_LIST \
@@ -74,6 +77,7 @@ bool isBinaryOperator(TokenType type);
 bool isFunction(TokenType type);
 bool isVariable(TokenType type);
 bool isParen(TokenType type);
+bool isRightAssociative(TokenType type);
 
 int getOperatorPriority(TokenType type);
 
@@ -84,5 +88,9 @@ void freeTokens(Token *tokens);
 
 TokenType getFunction(const char *name);
 TokenType getOperatorFunctionType(char ch);
+
+
+Token *parserToRPN(const Token *inTokens, int inCount, int *outCount, ErrorCode *err);
+
 
 #endif

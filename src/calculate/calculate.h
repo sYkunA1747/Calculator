@@ -16,7 +16,7 @@ double CalculateMultiply(double numOne, double numTwo);
 double CalculateDivision(double numOne, double numTwo);
 double CalculateNthRoot(double numOne, double numTwo);
 double CalculatePow(double numOne, double numTwo);
-double NthRoot(double numOne, double numTwo);
+
 
 // Fucntion for testing trigonometric
 double CalculateCos(double angle);
@@ -35,7 +35,7 @@ double CalculateArcCot(double angle);
 /*             Additional                     */
 /*                Function                    */
 /*============================================*/
-
+static double NthRoot(double numOne, double numTwo);
 
 
 #endif

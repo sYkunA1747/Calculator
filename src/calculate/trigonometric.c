@@ -27,11 +27,13 @@ double CalculateCos(double angle){
 
 
 double CalculateSin(double angle){
+    
+    angle = normalize_angle(angle);
+    
     double term = angle;
     double sum = angle;
     int number = 1;
 
-    angle = normalize_angle(angle);
 
     do{
         term = -term*angle*angle/((2*number)*(2*number+1));
@@ -91,6 +93,8 @@ double CalculateBaseArcTan(double angle){
 
 
 double CalculateArcTan(double angle){
+    if(angle == 1.0) return M_PI_2/2.0;
+    if(angle == -1.0) return -M_PI_2/2.0;
     if(angle>1.0) return M_PI_2-CalculateBaseArcTan(1.0/angle);
     else if(angle<-1.0) return -M_PI_2-CalculateBaseArcTan(1.0/angle);
     return CalculateBaseArcTan(angle);

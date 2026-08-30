@@ -38,17 +38,18 @@ double CalculatePow(double numOne, double numTwo){
 }
 
 
-double NthRoot(double base, double exp){
-    if(exp == 0.0) return INFINITY;
-
-    return myPow(base, 1.0/exp);
-}
-
 
 /*============================================*/
 /*             Additional                     */
 /*                Function                    */
 /*============================================*/
+
+static double NthRoot(double base, double exp){
+    if(exp == 0.0) return INFINITY;
+
+    return myPow(base, 1.0/exp);
+}
+
 
 static double intPow(double base, int exp) {
     if (exp == 0) return 1.0;

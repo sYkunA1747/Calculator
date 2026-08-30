@@ -1,7 +1,5 @@
 #include "testFunction.h"
-//#include "FunctionCalculate.h" // Пока не реализован ./src
-
-
+#include "../src/parser/parser.h"
 #include <stdio.h>
 #include <stdbool.h>
 

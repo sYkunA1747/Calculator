@@ -26,8 +26,7 @@
 #define ASSERT_CLOSE(actual, expected) (fabs((actual)-(expected))< EPSILON)
 #define ASSERT_TEST(actual, expected) (fabs((actual)-(expected))<EPSILON)
 
-
-char* FormatString(const char* expr); 
+ 
 #define ASSERT_STR_EQ(expr, expected) (strcasecmp(FormatString(expr), (expected)) == 0)
 
 /*
@@ -78,6 +77,10 @@ bool TestParseTwoStr(void);
 bool TestParseThreeStr(void);
 
 
+
+static inline char* FormatString(const char* expr) {
+    return (char*)expr; 
+}
 
 
 /*************************************** */

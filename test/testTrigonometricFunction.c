@@ -1,5 +1,5 @@
 #include "testFunction.h"
-//#include "FunctionCalculate.h" // Пока не реализован ./src
+#include "../src/calculate/calculate.h" 
 
 #include <stdbool.h>
 #include <math.h>

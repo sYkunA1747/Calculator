@@ -24,7 +24,6 @@ Token *tokenize(const char *expr, int *tokenCount){
             tokens = temp;
         }
 
-
         if(isspace((unsigned char)expr[i])){
             i++;
             continue;
@@ -69,6 +68,7 @@ Token *tokenize(const char *expr, int *tokenCount){
             tokens[index].type = TOKEN_UNKNOWN;
             index++;
             i++;
+            continue;
         }
     }
 
@@ -159,3 +159,6 @@ int getOperatorPriority(TokenType type){
     }
 }
 
+bool isRightAssociative(TokenType type) {
+    return (type == TOKEN_POW_OPERATOR);
+}
