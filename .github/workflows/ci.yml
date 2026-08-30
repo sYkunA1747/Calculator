@@ -1,0 +1,31 @@
+name: Calculator CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Install build tools and Valgrind
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential valgrind
+      
+    - name: Compile Application and Tests via GCC
+      run: |
+        gcc -Wall -Wextra -std=c99 src/main/main.c src/parser/lekser.c src/parser/parser.c src/parser/stack.c src/evaluate/evaluate.c src/errorhandling/errors.c src/calculate/calculate.c src/calculate/trigonometric.c -lm -o calculator
+        gcc -Wall -Wextra -std=c99 test/mainTest.c test/testFunctionCalculate.c test/testTrigonometricFunction.c test/testParserString.c src/calculate/calculate.c src/calculate/trigonometric.c src/parser/parser.c src/parser/lekser.c src/parser/stack.c src/errorhandling/errors.c -lm -o run_math_tests
+      
+    - name: Run Unit Tests
+      run: ./run_math_tests
+      
+    - name: Check Memory Leaks via Valgrind
+      run: valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=1 ./run_math_tests
