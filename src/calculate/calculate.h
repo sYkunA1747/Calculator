@@ -9,6 +9,8 @@
 #define M_PI_2 1.57079632679489661923
 #endif
 
+#define M_SQRT3_INV 0.57735026918962576451
+#define M_PI_6 0.52359877559829887307
 
 double CalculatePlus(double numOne, double numTwo);
 double CalculateMinus(double numOne, double numTwo);
@@ -35,7 +37,7 @@ double CalculateArcCot(double angle);
 /*             Additional                     */
 /*                Function                    */
 /*============================================*/
-static double NthRoot(double numOne, double numTwo);
+
 
 
 #endif

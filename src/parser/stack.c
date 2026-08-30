@@ -23,11 +23,15 @@ StackStatus stackPush(TokenStack *stack, Token token){
     if(stack==NULL) return STACK_ERROR_NULL;
     if(stack->items==NULL) return STACK_ERROR_NULL;
     if(stack->capacity<=0) return STACK_ERROR_NULL;
-    if(stack->top+1>=stack->capacity) return STACK_ERROR_OVERFLOW;
-
+    if(stack->top+1>=stack->capacity){
+        int newCapacity = stack->capacity*2;
+        Token *newItems = realloc(stack->items, newCapacity*sizeof(Token));
+        if(newItems == NULL) return STACK_ERROR_NO_MEMORY;
+        stack->items = newItems;
+        stack->capacity = newCapacity;
+    }
     stack->top++;
     stack->items[stack->top] = token;
-
     return STACK_OK;
 }
 
@@ -38,7 +42,6 @@ StackStatus stackPop(TokenStack *stack, Token *outToken){
     if(stack->items==NULL) return STACK_ERROR_NULL;
     if(stack->capacity<=0) return STACK_ERROR_NULL;
     if(stack->top<0) return STACK_ERROR_UNDERFLOW;
-    
     *outToken = stack->items[stack->top];
     stack->top--;
     return STACK_OK;
@@ -51,7 +54,6 @@ StackStatus stackPeek(const TokenStack *stack, Token *outToken){
     if(stack->items==NULL) return STACK_ERROR_NULL ;
     if(stack->capacity<=0)  return STACK_ERROR_NULL;
     if(stack->top<0) return STACK_ERROR_UNDERFLOW;
-
     *outToken = stack->items[stack->top];
     return STACK_OK;
 }

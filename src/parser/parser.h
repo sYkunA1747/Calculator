@@ -81,7 +81,7 @@ bool isRightAssociative(TokenType type);
 
 int getOperatorPriority(TokenType type);
 
-Token *tokenize(const char *expr, int *token_count);
+Token *tokenize(const char *expr, int *tokenCount);
 void freeTokens(Token *tokens);
 
 

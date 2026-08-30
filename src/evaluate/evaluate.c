@@ -16,6 +16,8 @@ double evaluateRPN(const Token *rpnTokens, int rpnCount, ErrorCode *err){
             top++;
             numStack[top] = rpnTokens[i].data.number;
         } else if(rpnTokens[i].type == TOKEN_VARIABLE){
+            if(err != NULL) *err = ERROR_PARSER_MISSING_OPERAND;
+            free(numStack);
             return 0.0;
         } else if(isOperator(rpnTokens[i].type)){
             if(rpnTokens[i].type == TOKEN_UNAR_MINUS){
@@ -33,10 +35,10 @@ double evaluateRPN(const Token *rpnTokens, int rpnCount, ErrorCode *err){
                 return 0.0;
             }
             switch(rpnTokens[i].type){
-                case TOKEN_PLUS:            numStack[top-1] = numStack[top-1]+numStack[top]; top--;break; 
-                case TOKEN_MINUS:           numStack[top-1] = numStack[top-1]-numStack[top]; top--;break;
-                case TOKEN_MULTIPLY:        numStack[top-1] = numStack[top-1]*numStack[top]; top--;break;
-                case TOKEN_DIVISION:        numStack[top-1] = numStack[top-1]/numStack[top]; top--;break; 
+                case TOKEN_PLUS:            numStack[top-1] = CalculatePlus(numStack[top-1], numStack[top]); top--;break; 
+                case TOKEN_MINUS:           numStack[top-1] = CalculateMinus(numStack[top-1], numStack[top]); top--;break;
+                case TOKEN_MULTIPLY:        numStack[top-1] = CalculateMultiply(numStack[top-1],numStack[top]); top--;break;
+                case TOKEN_DIVISION:        numStack[top-1] = CalculateDivision(numStack[top-1],numStack[top]); top--;break; 
                 case TOKEN_NTHROOT_OPERATOR:numStack[top-1] = CalculateNthRoot(numStack[top-1],numStack[top]); top--; break;
                 case TOKEN_POW_OPERATOR:    numStack[top-1] = CalculatePow(numStack[top-1],numStack[top]); top--; break;
                 default: break;

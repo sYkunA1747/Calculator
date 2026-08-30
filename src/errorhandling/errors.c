@@ -12,8 +12,10 @@ static const char *error_messages[] = {
 
 
 void logError(ErrorCode code, const char *contex){
-    if(code < 0 || code >= sizeof(error_messages)/sizeof(error_messages[0]))
+    if(code < 0 || code >= sizeof(error_messages)/sizeof(error_messages[0])){
         fprintf(stderr, "Неизвестный код ошибки (%d).\n", code);
+        return;
+    }   
     if(contex != NULL && contex[0] != '\0')
         fprintf(stderr,"[Ошибка] %s (котнекст: %s)\n", error_messages[code], contex);
     else

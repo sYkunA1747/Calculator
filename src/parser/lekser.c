@@ -12,7 +12,6 @@ Token *tokenize(const char *expr, int *tokenCount){
     int i = 0, capacity = 10, index = 0;
     Token *tokens = malloc(capacity*(sizeof(Token)));
     if(tokens == NULL) return NULL;
-
     while(expr[i]!='\0'){
         if(index >= capacity){
             capacity*=2;
@@ -23,11 +22,16 @@ Token *tokenize(const char *expr, int *tokenCount){
             }
             tokens = temp;
         }
-
         if(isspace((unsigned char)expr[i])){
             i++;
             continue;
         } else if(isdigit((unsigned char)expr[i]) || expr[i] == '.'){
+            if(expr[i] == '.' && !isdigit((unsigned char)expr[i+1])){
+                tokens[index].type = TOKEN_UNKNOWN;
+                index++;
+                i++;
+                continue;
+            }
             char*end;
             tokens[index].type = TOKEN_NUMBER;
             tokens[index].data.number = strtod(&expr[i], &end);
@@ -160,5 +164,5 @@ int getOperatorPriority(TokenType type){
 }
 
 bool isRightAssociative(TokenType type) {
-    return (type == TOKEN_POW_OPERATOR);
+    return (type == TOKEN_POW_OPERATOR || type == TOKEN_UNAR_MINUS);
 }
