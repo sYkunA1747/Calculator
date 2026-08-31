@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS= -fPIE -Wall -Wextra -Werror -std=c99 -g -Wpedantic -Wshadow -Wformat=2 -fstack-protector-strong -D_FORTIFY_SOURCE=2 -D_POSIX_C_SOURCE=200809L -O2 -MMD -MP
 LDFLAGS=-pie -Wl,-z,relro -Wl,-z,now -lm
-DEBUG_FLAGS= -O0 -g3 -fsanitize=address,undefined -fno-omit-frame-pointer
+DEBUG_FLAGS= -O1 -g3 -fsanitize=address,undefined -fno-omit-frame-pointer
 RELEASE_FLAGS= -O3 -DNDEBUG -march=native
 
 
