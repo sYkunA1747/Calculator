@@ -41,7 +41,9 @@ release: CFLAGS += $(RELEASE_FLAGS)
 release: clean all
 
 test: $(TARGET_TEST)
+	@mkdir -p logs
 	./$(TARGET_TEST) > logs/test_log$(LOG_TIME).log 2>&1
+
 
 tree:
 	@echo "=== АВТОМАТИЧЕСКАЯ ГЕНЕРАЦИЯ СТРУКТУРЫ ПРОЕКТА ==="
