@@ -2,7 +2,7 @@
 #define CALCULATE_H
 
 #ifndef M_PI
-#define M_PI  3.14159265358979323846
+#define M_PI 3.14159265358979323846
 #endif
 
 #ifndef M_PI_2
@@ -19,7 +19,6 @@ double CalculateDivision(double numOne, double numTwo);
 double CalculateNthRoot(double numOne, double numTwo);
 double CalculatePow(double numOne, double numTwo);
 
-
 // Fucntion for testing trigonometric
 double CalculateCos(double angle);
 double CalculateSin(double angle);
@@ -27,17 +26,12 @@ double CalculateTan(double angle);
 double CalculateCot(double angle);
 double CalculateArcCos(double angle);
 double CalculateArcSin(double angle);
-double CalculateBaseArcTan(double angle);
 double CalculateArcTan(double angle);
 double CalculateArcCot(double angle);
-
-
 
 /*============================================*/
 /*             Additional                     */
 /*                Function                    */
 /*============================================*/
-
-
 
 #endif

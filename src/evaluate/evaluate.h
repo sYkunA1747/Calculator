@@ -4,7 +4,6 @@
 #include "../errorhandling/errors.h"
 #include "../parser/parser.h"
 
-double evaluateRPN(const Token *rpnTokens, int rpnCount, ErrorCode *err);
-
+double evaluateRPN(const Token* rpnTokens, int rpnCount, ErrorCode* err);
 
 #endif

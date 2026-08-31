@@ -10,10 +10,9 @@
 #define strcasecmp _stricmp
 #endif
 
-
 /*
-*   testTrigonometricFunctions
-*/
+ *   testTrigonometricFunctions
+ */
 
 #ifndef M_PI_2
 #define M_PI_2 1.57079632679489661923
@@ -21,23 +20,23 @@
 
 #ifndef EPSILON
 #define EPSILON 1e-10
-#endif 
+#endif
 
-#define ASSERT_CLOSE(actual, expected) (fabs((actual)-(expected))< EPSILON)
-#define ASSERT_TEST(actual, expected) (fabs((actual)-(expected))<EPSILON)
+#define ASSERT_CLOSE(actual, expected) (fabs((actual) - (expected)) < EPSILON)
+#define ASSERT_TEST(actual, expected) (fabs((actual) - (expected)) < EPSILON)
 
- 
-#define ASSERT_STR_EQ(expr, expected) (strcasecmp(FormatString(expr), (expected)) == 0)
+#define ASSERT_STR_EQ(expr, expected) \
+  (strcasecmp(FormatString(expr), (expected)) == 0)
 
 /*
-*  Function of calculate
-*/
+ *  Function of calculate
+ */
 
 bool TestCalculatePlus(double numOne, double numTwo);
 bool TestCalculateMinus(double numOne, double numTwo);
 bool TestCalculateMultiply(double numOne, double numTwo);
 bool TestCalculateDivision(double numOne, double numTwo);
-bool TestCalculateNthRoot(double numOne, double numTwo);
+bool TestCalculateNthRoot(double number, double degree);
 bool TestCalculatePow(double numOne, double numTwo);
 
 // Fucntion for testing trigonometric
@@ -69,23 +68,15 @@ bool TestCalculateArcCos_InvalidInput(void);
 bool TestCalculateArcSin_InvalidInput(void);
 
 /*
-*  Function of parsing to string
-*/
+ *  Function of parsing to string
+ */
 
 bool TestParseOneStr(void);
 bool TestParseTwoStr(void);
 bool TestParseThreeStr(void);
 
-
-
-static inline char* FormatString(const char* expr) {
-    return (char*)expr; 
-}
-
+static inline char* FormatString(const char* expr) { return (char*)expr; }
 
 /*************************************** */
 
 #endif
-
-
-
