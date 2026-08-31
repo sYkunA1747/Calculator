@@ -4,14 +4,103 @@
 #include "../src/parser/parser.h"
 #include "testFunction.h"
 
-bool TestParseOneStr(void) {
-  return ASSERT_STR_EQ("2*A + 2*C - A*B", "2*a+2*c-a*b");
+static bool TestParseString(const TestCase* self, double actualResult) {
+  (void)actualResult;
+  return ASSERT_STR_EQ(self->expr, self->name);
 }
 
-bool TestParseTwoStr(void) {
-  return ASSERT_STR_EQ("tan(2A) - pow(A,2)", "tg(2*a)-pow(a,2)");
-}
+static const TestCase parserStringTests[] = {
+    {"2*A + 2*C - A*B", "2*a+2*c-a*b", TestParseString, 0.0, 0.0, 0.0},
+    {"  A  +  B  ", "a+b", TestParseString, 0.0, 0.0, 0.0},
+    {"XYZ", "x*y*z", TestParseString, 0.0, 0.0, 0.0},
+    {"a   +   b", "a+b", TestParseString, 0.0, 0.0, 0.0},
+    {"A*B*C*D", "a*b*c*d", TestParseString, 0.0, 0.0, 0.0},
+    {"   42   +   58   ", "42+58", TestParseString, 0.0, 0.0, 0.0},
+    {"  (  1  +  2  )  ", "(1+2)", TestParseString, 0.0, 0.0, 0.0},
+    {"A   *   B   /   C", "a*b/c", TestParseString, 0.0, 0.0, 0.0},
+    {"X   -   Y   -   Z", "x-y-z", TestParseString, 0.0, 0.0, 0.0},
+    {"  -  5  +  3  ", "-5+3", TestParseString, 0.0, 0.0, 0.0},
+    {"2A", "2*a", TestParseString, 0.0, 0.0, 0.0},
+    {"2(A+B)", "2*(a+b)", TestParseString, 0.0, 0.0, 0.0},
+    {"(A+B)(C+D)", "(a+b)*(c+d)", TestParseString, 0.0, 0.0, 0.0},
+    {"A sin(B)", "a*sin(b)", TestParseString, 0.0, 0.0, 0.0},
+    {"5x", "5*x", TestParseString, 0.0, 0.0, 0.0},
+    {"X(Y+Z)", "x*(y+z)", TestParseString, 0.0, 0.0, 0.0},
+    {"3.14R^2", "3.14*r^2", TestParseString, 0.0, 0.0, 0.0},
+    {"10A B C", "10*a*b*c", TestParseString, 0.0, 0.0, 0.0},
+    {"(X+1)Y", "(x+1)*y", TestParseString, 0.0, 0.0, 0.0},
+    {"7(cos(X))", "7*(cos(x))", TestParseString, 0.0, 0.0, 0.0},
+    {"4.5A(B-2)", "4.5*a*(b-2)", TestParseString, 0.0, 0.0, 0.0},
+    {"(1+2)3", "(1+2)*3", TestParseString, 0.0, 0.0, 0.0},
+    {"A B(C D)", "a*b*(c*d)", TestParseString, 0.0, 0.0, 0.0},
+    {"2 3", "2*3", TestParseString, 0.0, 0.0, 0.0},
+    {"X Y^2", "x*y^2", TestParseString, 0.0, 0.0, 0.0},
+    {"tan(2A) - pow(A,2)", "tg(2*a)-pow(a,2)", TestParseString, 0.0, 0.0, 0.0},
+    {"arctan(X)", "atan(x)", TestParseString, 0.0, 0.0, 0.0},
+    {"arccot(Y)", "acot(y)", TestParseString, 0.0, 0.0, 0.0},
+    {"arccos(Z)", "acos(z)", TestParseString, 0.0, 0.0, 0.0},
+    {"arcsin(W)", "asin(w)", TestParseString, 0.0, 0.0, 0.0},
+    {"cos(2*A) + 2^C - nthroot(2)", "cos(2*a)+2^c-sqr(2)", TestParseString, 0.0,
+     0.0, 0.0},
+    {"SIN(X) + COS(Y) + TAN(Z)", "sin(x)+cos(y)+tg(z)", TestParseString, 0.0,
+     0.0, 0.0},
+    {"ARCCOS(A) - ARCSIN(B)", "acos(a)-asin(b)", TestParseString, 0.0, 0.0,
+     0.0},
+    {"ARCTAN(2X) + ARCCOT(3Y)", "atan(2*x)+acot(3*y)", TestParseString, 0.0,
+     0.0, 0.0},
+    {"POW(A, B) + NTHROOT(X, Y)", "pow(a,b)+sqr(x,y)", TestParseString, 0.0,
+     0.0, 0.0},
+    {"MyPow(2, 3)", "pow(2,3)", TestParseString, 0.0, 0.0, 0.0},
+    {"NthRoot(16)", "sqr(16)", TestParseString, 0.0, 0.0, 0.0},
+    {"A^B^C", "a^b^c", TestParseString, 0.0, 0.0, 0.0},
+    {"-A*-B", "-a*-b", TestParseString, 0.0, 0.0, 0.0},
+    {"nthroot(A,B)*mypow(C,D)", "sqr(a,b)*pow(c,d)", TestParseString, 0.0, 0.0,
+     0.0},
+    {"sin(cos(tan(A)))", "sin(cos(tg(a)))", TestParseString, 0.0, 0.0, 0.0},
+    {"(A+B)/(-C+D)", "(a+b)/(-c+d)", TestParseString, 0.0, 0.0, 0.0},
+    {"A*B/C*D", "a*b/c*d", TestParseString, 0.0, 0.0, 0.0},
+    {"10^X", "10^x", TestParseString, 0.0, 0.0, 0.0},
+    {"-sin(-x)", "-sin(-x)", TestParseString, 0.0, 0.0, 0.0},
+    {"A^2 - B^2", "a^2-b^2", TestParseString, 0.0, 0.0, 0.0},
+    {"(A+B)^3 / (C-D)^2", "(a+b)^3/(c-d)^2", TestParseString, 0.0, 0.0, 0.0},
+    {"sin(X)^2 + cos(X)^2", "sin(x)^2+cos(x)^2", TestParseString, 0.0, 0.0,
+     0.0},
+    {"-4 + -5 * -3", "-4+-5*-3", TestParseString, 0.0, 0.0, 0.0},
+    {"A/B/C/D", "a/b/c/d", TestParseString, 0.0, 0.0, 0.0},
+    {"mypow(2, nthroot(4))", "pow(2,sqr(4))", TestParseString, 0.0, 0.0, 0.0},
+    {"(A*B)^(C*D)", "(a*b)^(c*d)", TestParseString, 0.0, 0.0, 0.0},
+    {"---A", "---a", TestParseString, 0.0, 0.0, 0.0},
+    {"2.5A + 3.14B", "2.5*a+3.14*b", TestParseString, 0.0, 0.0, 0.0},
+    {"tan(X)(1+tan(X)^2)", "tg(x)*(1+tg(x)^2)", TestParseString, 0.0, 0.0, 0.0},
+    {"cos(X) / sin(X)", "cos(x)/sin(x)", TestParseString, 0.0, 0.0, 0.0},
+    {"arccos(sin(X))", "acos(sin(x))", TestParseString, 0.0, 0.0, 0.0},
+    {"arcsin(cos(X))", "asin(cos(x))", TestParseString, 0.0, 0.0, 0.0},
+    {"1 / tan(X)", "1/tg(x)", TestParseString, 0.0, 0.0, 0.0},
+    {"2^3^4", "2^3^4", TestParseString, 0.0, 0.0, 0.0},
+    {"A*B+C*D-E/F", "a*b+c*d-e/f", TestParseString, 0.0, 0.0, 0.0},
+    {"(A)", "（a）", TestParseString, 0.0, 0.0, 0.0},
+    {"(((A)))", "(((a)))", TestParseString, 0.0, 0.0, 0.0},
+    {"A*(-B)", "a*-b", TestParseString, 0.0, 0.0, 0.0},
+    {"-pow(X,2)", "-pow(x,2)", TestParseString, 0.0, 0.0, 0.0},
+    {"A+B-C+D-E", "a+b-c+d-e", TestParseString, 0.0, 0.0, 0.0},
+    {"A *   B", "a*b", TestParseString, 0.0, 0.0, 0.0},
+    {"A\t+\tB", "a+b", TestParseString, 0.0, 0.0, 0.0},
+    {"2.000A", "2.000*a", TestParseString, 0.0, 0.0, 0.0},
+    {"nthroot(2)nthroot(3)", "sqr(2)*sqr(3)", TestParseString, 0.0, 0.0, 0.0},
+    {"sin(A)cos(B)", "sin(a)*cos(b)", TestParseString, 0.0, 0.0, 0.0},
+    {"X^2Y^2", "x^2*y^2", TestParseString, 0.0, 0.0, 0.0},
+    {"(A+B)-C", "(a+b)-c", TestParseString, 0.0, 0.0, 0.0},
+    {"A-(B+C)", "a-(b+c)", TestParseString, 0.0, 0.0, 0.0},
+    {"1e3A", "1e3*a", TestParseString, 0.0, 0.0, 0.0},
+    {"0A", "0*a", TestParseString, 0.0, 0.0, 0.0},
+    {"-1A", "-1*a", TestParseString, 0.0, 0.0, 0.0},
+    {"A/B*C", "a/b*c", TestParseString, 0.0, 0.0, 0.0},
+    {"A*(B/C)", "a*(b/c)", TestParseString, 0.0, 0.0, 0.0},
+    {"(A/B)/C", "(a/b)/c", TestParseString, 0.0, 0.0, 0.0}};
 
-bool TestParseThreeStr(void) {
-  return ASSERT_STR_EQ("cos(2*A) + 2^C - nthroot(2)", "cos(2*a)+2^c-sqr(2)");
+TestSuite getParserStringSuite(void) {
+  TestSuite suite;
+  suite.tests = parserStringTests;
+  suite.count = sizeof(parserStringTests) / sizeof(parserStringTests[0]);
+  return suite;
 }

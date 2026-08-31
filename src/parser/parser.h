@@ -22,7 +22,7 @@
   X("arcsin", TOKEN_ARCSIN)      \
   X("arccos", TOKEN_ARCCOS)      \
   X("arctan", TOKEN_ARCTAN)      \
-  X("arccotan", TOKEN_ARCCOT)    \
+  X("arccot", TOKEN_ARCCOT)      \
   X("mypow", TOKEN_POW_FUNCTION) \
   X("nthroot", TOKEN_NTHROOT_FUNCTION)
 #endif

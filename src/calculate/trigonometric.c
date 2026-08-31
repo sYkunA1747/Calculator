@@ -59,16 +59,15 @@ double CalculateSin(double angle) {
 double CalculateTan(double angle) {
   double sinVal = CalculateSin(angle);
   double cosVal = CalculateCos(angle);
-  if (fabs(cosVal) < 1e-10) return copysign(INFINITY, sinVal * cosVal);
-  ;
-  return CalculateSin(angle) / cosVal;
+  if (fabs(cosVal) < 1e-8) return copysign(INFINITY, sinVal);
+  return sinVal / cosVal;
 }
 
 double CalculateCot(double angle) {
   double sinVal = CalculateSin(angle);
-  if (fabs(sinVal) < 1e-10)
-    return copysign(INFINITY, sinVal * CalculateCos(angle));
-  return CalculateCos(angle) / sinVal;
+  double cosVal = CalculateCos(angle);
+  if (fabs(sinVal) < 1e-8) return copysign(INFINITY, cosVal);
+  return cosVal / sinVal;
 }
 
 double CalculateArcSin(double angle) {

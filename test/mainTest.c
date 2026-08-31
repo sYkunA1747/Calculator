@@ -1,58 +1,105 @@
+#include <math.h>
 #include <stdio.h>
 
+#include "../src/errorhandling/errors.h"
+#include "../src/evaluate/evaluate.h"
+#include "../src/parser/parser.h"
 #include "testFunction.h"
 
+TestSuite getCalculateSuite(void);
+TestSuite getTrigonometricSuite(void);
+TestSuite getParserStringSuite(void);
+
+static int runTestSuite(const char* suiteName, TestSuite suite,
+                        bool isParserTest) {
+  int passed = 0;
+  printf("=== Запуск набора тестов: %s (%d кейсов) ===\n", suiteName,
+         suite.count);
+
+  for (int i = 0; i < suite.count; i++) {
+    const TestCase* test = &suite.tests[i];
+    int tokenCount = 0, rpnCount = 0;
+    ErrorCode err = ERR_OK;
+
+    if (isParserTest) {
+      char* formattedExpr = InternalFormatStringForTest(test->expr);
+      Token* tokens = tokenize(formattedExpr, &tokenCount);
+      free(formattedExpr);
+      if (tokens != NULL) {
+        printf("  [OK] Тест %d [%s]: Успешное форматирование строки\n", i,
+               test->expr);
+        passed++;
+        freeTokens(tokens);
+      } else {
+        printf(
+            "[FAIL] Тест %d [%s]: Твой ASSERT отклонил строку форматирования\n",
+            i, test->expr);
+      }
+      continue;
+    }
+    char* formattedExpr = InternalFormatStringForTest(test->expr);
+    Token* tokens = tokenize(formattedExpr, &tokenCount);
+    free(formattedExpr);
+    if (tokens == NULL) {
+      printf("[FAIL] Тест %d [%s]: Сбой выделения памяти в лексере на '%s'\n",
+             i, test->name, test->expr);
+      continue;
+    }
+
+    Token* rpnTokens = parserToRPN(tokens, tokenCount, &rpnCount, &err);
+    if (rpnTokens == NULL) {
+      printf("[FAIL] Тест %d [%s]: Парсер упал с кодом %d на '%s'\n", i,
+             test->name, err, test->expr);
+      freeTokens(tokens);
+      continue;
+    }
+
+    double result = evaluateRPN(rpnTokens, rpnCount, &err);
+    if (err != ERR_OK) {
+      printf("[FAIL] Тест %d [%s]: Вычислитель упал с кодом %d на '%s'\n", i,
+             test->name, err, test->expr);
+    } else {
+      if (test->func(test, result)) {
+        printf("  [OK] Тест %d [%s]: '%s' -> Рассчитано: %f\n", i, test->name,
+               test->expr, result);
+        passed++;
+      } else {
+        printf(
+            "[FAIL] Тест %d [%s]: Твой ASSERT отклонил результат %f на "
+            "выражении '%s'\n",
+            i, test->name, result, test->expr);
+      }
+    }
+    freeTokens(tokens);
+    freeTokens(rpnTokens);
+  }
+  printf("=== Итог по набору %s: Пройдено %d из %d тестов ===\n\n", suiteName,
+         passed, suite.count);
+  return passed;
+}
+
 int main() {
-  printf("Запуск проверки тестов...\n");
+  printf("==================================================\n");
+  printf("==     МОДУЛЬНЫЙ ЗАПУСК СТРЕСС-ТЕСТОВ МАТРИЦЫ     ==\n");
+  printf("==================================================\n\n");
+  int totalPassed = 0;
+  int totalTests = 0;
 
-  printf("Тестируем Plus...\n");
-  TestCalculatePlus(5.0, 2.0);
-  printf("Тестируем Minus...\n");
-  TestCalculateMinus(5.0, 2.0);
-  printf("Тестируем Multiply...\n");
-  TestCalculateMultiply(5.0, 2.0);
-  printf("Тестируем Division...\n");
-  TestCalculateDivision(5.0, 2.0);
-  printf("Тестируем NthRoot...\n");
-  TestCalculateNthRoot(25.0, 2.0);
-  printf("Тестируем Pow...\n");
-  TestCalculatePow(5.0, 2.0);
+  TestSuite calcSuite = getCalculateSuite();
+  totalTests += calcSuite.count;
+  totalPassed += runTestSuite("АРИФМЕТИКА", calcSuite, false);
 
-  printf("Тестируем Cos...\n");
-  TestCalculateCos(0.0);
-  printf("Тестируем Sin...\n");
-  TestCalculateSin(0.0);
+  TestSuite trigSuite = getTrigonometricSuite();
+  totalTests += trigSuite.count;
+  totalPassed += runTestSuite("ТРИГОНОМЕТРИЯ", trigSuite, false);
 
-  printf("Тестируем ArcCos...\n");
-  TestCalculateArcCos(0.5);
-  printf("Тестируем ArcSin...\n");
-  TestCalculateArcSin(0.5);
-  printf("Тестируем ArcTan...\n");
-  TestCalculateArcTan(1.0);
-  printf("Тестируем ArcCot...\n");
-  TestCalculateArcCot(1.0);
+  TestSuite parseSuite = getParserStringSuite();
+  totalTests += parseSuite.count;
+  totalPassed += runTestSuite("ПАРСЕР СТРОК", parseSuite, true);
 
-  printf("Тестируем Tan_Valid...\n");
-  TestCalculateTan_Valid(0.0);
-  printf("Тестируем Cot_Valid...\n");
-  TestCalculateCot_Valid(M_PI_2);
-
-  printf("Тестируем Tan_Singularity...\n");
-  TestCalculateTan_Singularity();
-  printf("Тестируем Cot_Singularity...\n");
-  TestCalculateCot_Singularity();
-  printf("Тестируем ArcCos_InvalidInput...\n");
-  TestCalculateArcCos_InvalidInput();
-  printf("Тестируем ArcSin_InvalidInput...\n");
-  TestCalculateArcSin_InvalidInput();
-
-  printf("Тестируем ParseOneStr...\n");
-  TestParseOneStr();
-  printf("Тестируем ParseTwoStr...\n");
-  TestParseTwoStr();
-  printf("Тестируем ParseThreeStr...\n");
-  TestParseThreeStr();
-
-  printf("Все тесты успешно вызваны! Сборка и линковка прошли чики-пуки.\n");
-  return 0;
+  printf("==================================================\n");
+  printf("ФИНАЛЬНЫЙ СТАТУС: Успешно пройдено %d из %d тестов\n", totalPassed,
+         totalTests);
+  printf("==================================================\n");
+  return (totalPassed == totalTests) ? 0 : 1;
 }

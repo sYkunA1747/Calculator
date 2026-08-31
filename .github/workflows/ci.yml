@@ -5,6 +5,8 @@ on:
     branches: [ main, master, develop ]
   pull_request:
     branches: [ main, master, develop ]
+  schedule:
+    - cron: '0 0 * * 1'
 
 jobs:
   build_and_test:
@@ -14,18 +16,57 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
     
-    - name: Install build tools and Valgrind
+    - name: Install Build Tools, Clang, Valgrind and Cppcheck
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential valgrind
-      
-    - name: Compile Application and Tests via GCC
+        sudo apt-get install -y build-essential clang valgrind cppcheck
+    
+    - name: Run Static Analysis (Cppcheck)
+      run: make check
+    
+    - name: Run Code Style Check (Clang-Format)
+      run: make format-check
+    
+    - name: Compile and Run Unit Tests
+      run: make test
+    
+    - name: Check Dynamic Memory Leaks (Valgrind)
+      run: make valgrind_test
+    
+    - name: Check Main Binary Leaks (Valgrind)
       run: |
-        gcc -Wall -Wextra -std=c99 src/main/main.c src/parser/lekser.c src/parser/parser.c src/parser/stack.c src/evaluate/evaluate.c src/errorhandling/errors.c src/calculate/calculate.c src/calculate/trigonometric.c -lm -o calculator
-        gcc -Wall -Wextra -std=c99 test/mainTest.c test/testFunctionCalculate.c test/testTrigonometricFunction.c test/testParserString.c src/calculate/calculate.c src/calculate/trigonometric.c src/parser/parser.c src/parser/lekser.c src/parser/stack.c src/errorhandling/errors.c -lm -o run_math_tests
-      
-    - name: Run Unit Tests
-      run: ./run_math_tests
-      
-    - name: Check Memory Leaks via Valgrind
-      run: valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=1 ./run_math_tests
+        make calculator
+        echo "2+2" | valgrind --leak-check=full --error-exitcode=1 ./calculator
+
+  fuzzing:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Install Clang
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang
+    
+    - name: Create Seed Corpus
+      run: |
+        mkdir -p fuzz/corpus
+        echo "2+2" > fuzz/corpus/basic.txt
+        echo "sin(0)" > fuzz/corpus/trig.txt
+    
+    - name: Run White Box Fuzzing (libFuzzer)
+      run: make fuzz
+    
+    - name: Upload Fuzzing Artifacts
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: fuzzing-artifacts
+        path: |
+          crash-*
+          leak-*
+          oom-*
+          slow-unit-*

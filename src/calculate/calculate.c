@@ -35,7 +35,16 @@ double CalculatePow(double numOne, double numTwo) {
 
 static double NthRoot(double base, double exp) {
   if (exp == 0.0) return INFINITY;
-  return myPow(base, 1.0 / exp);
+  if (base < 0.0) {
+    if (exp == floor(exp) && fabs(fmod(exp, 2.0)) != 0.0) {
+      double res = myPow(-base, 1.0 / exp);
+      if (fabs(res - floor(res + 0.5)) < 1e-9) res = floor(res + 0.5);
+      return -res;
+    }
+  }
+  double res = myPow(base, 1.0 / exp);
+  if (fabs(res - floor(res + 0.5)) < 1e-9) res = floor(res + 0.5);
+  return res;
 }
 
 double intPow(double base, int exp) {

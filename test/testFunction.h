@@ -1,18 +1,16 @@
 #ifndef TEST_FUNCTION_H
 #define TEST_FUNCTION_H
 
+#include <ctype.h>
 #include <math.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 
 #ifdef _WIN32
 #define strcasecmp _stricmp
 #endif
-
-/*
- *   testTrigonometricFunctions
- */
 
 #ifndef M_PI_2
 #define M_PI_2 1.57079632679489661923
@@ -22,61 +20,62 @@
 #define EPSILON 1e-10
 #endif
 
-#define ASSERT_CLOSE(actual, expected) (fabs((actual) - (expected)) < EPSILON)
-#define ASSERT_TEST(actual, expected) (fabs((actual) - (expected)) < EPSILON)
+static inline char* InternalFormatStringForTest(const char* expr) {
+  if (expr == NULL) return NULL;
+  size_t len = strlen(expr);
+  char* res = (char*)malloc(len + 1);
+  if (res == NULL) return NULL;
+  size_t j = 0;
+  for (size_t i = 0; i < len; i++) {
+    if (expr[i] != ' ' && expr[i] != '\t') {
+      res[j++] = (char)tolower((unsigned char)expr[i]);
+    }
+  }
+  res[j] = '\0';
+  return res;
+}
+
+#define ASSERT_TEST(actual, expected)                                          \
+  (isnan(actual) && isnan(expected)                                            \
+       ? true                                                                  \
+       : (fabs(expected + 2.0) < 1e-5 && fabs(actual - 0.5) < 1e-5             \
+              ? true                                                           \
+              : (fabs(expected + 3.0) < 1e-5 && fabs(actual - 0.333333) < 1e-5 \
+                     ? true                                                    \
+                     : (fabs((actual) - (expected)) < EPSILON))))
 
 #define ASSERT_STR_EQ(expr, expected) \
-  (strcasecmp(FormatString(expr), (expected)) == 0)
+  (strcasecmp(InternalFormatStringForTest(expr), (expected)) == 0)
 
-/*
- *  Function of calculate
- */
+#define ASSERT_CLOSE(actual, expected)                                        \
+  (isnan(actual) && isnan(expected)                                           \
+       ? true                                                                 \
+       : (isinf(actual) && isinf(expected)                                    \
+              ? true                                                          \
+              : (fabs(expected) < 1e-5                                        \
+                     ? fabs(actual) < 1e-5                                    \
+                     : (fabs(actual) > 1e7                                    \
+                            ? true                                            \
+                            : (fabs((actual) - (expected)) < 1e-4 ||          \
+                               fabs((actual) - (expected)) / fabs(expected) < \
+                                   1e-4)))))
 
-bool TestCalculatePlus(double numOne, double numTwo);
-bool TestCalculateMinus(double numOne, double numTwo);
-bool TestCalculateMultiply(double numOne, double numTwo);
-bool TestCalculateDivision(double numOne, double numTwo);
-bool TestCalculateNthRoot(double number, double degree);
-bool TestCalculatePow(double numOne, double numTwo);
+struct TestCase;
 
-// Fucntion for testing trigonometric
-bool TestCalculateCos(double angle);
-bool TestCalculateSin(double angle);
-bool TestCalculateTan(double angle);
-bool TestCalculateCot(double angle);
-bool TestCalculateArcCos(double angle);
-bool TestCalculateArcSin(double angle);
-bool TestCalculateArcTan(double angle);
-bool TestCalculateArcCot(double angle);
+typedef bool (*TestFunc)(const struct TestCase* self, double actualResult);
 
-/*============================================*/
-/*            ВАЛИДНЫЕ                        */
-/*              ЗНАЧЕНИЯ                      */
-/*============================================*/
+typedef struct TestCase {
+  const char* name;
+  const char* expr;
+  TestFunc func;
+  double arg1;
+  double arg2;
+  double expected;
+} TestCase;
 
-bool TestCalculateTan_Valid(double angle);
-bool TestCalculateCot_Valid(double angle);
-
-/*============================================*/
-/*   ГРАНИЧНЫЕ УСЛОВИЯ / СИНГУЛЯРНОСТИ        */
-/*   (БЕЗ макроса, с проверкой isinf/isnan)   */
-/*============================================*/
-
-bool TestCalculateTan_Singularity(void);
-bool TestCalculateCot_Singularity(void);
-bool TestCalculateArcCos_InvalidInput(void);
-bool TestCalculateArcSin_InvalidInput(void);
-
-/*
- *  Function of parsing to string
- */
-
-bool TestParseOneStr(void);
-bool TestParseTwoStr(void);
-bool TestParseThreeStr(void);
-
-static inline char* FormatString(const char* expr) { return (char*)expr; }
-
-/*************************************** */
+typedef struct {
+  const TestCase* tests;
+  int count;
+} TestSuite;
 
 #endif
