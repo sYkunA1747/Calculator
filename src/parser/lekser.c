@@ -1,100 +1,109 @@
-#include <assert.h>
-#include <ctype.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "parser.h"
+#include <stdbool.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
 
-static TokenType getFunction(const char* name);
-static TokenType getOperatorFunctionType(char ch);
-static bool isBinaryOperator(TokenType type);
+static TypeToken getOperatorFunctionType(char ch);
+static bool tokenizeSpace(Context *context);
+static bool tokenizeVariable(Context *context);
+static bool tokenizeOperator(Context *context);
+static bool tokenizeFunction(Context *context);
+static bool tokenizeError(Context *context);
+static TypeToken parseFunctionName(const char *name);
+static bool lekserRealloc(Context *context);
+static States determineNextState(Context *ctx);
 
-Token* tokenize(const char* expr, int* tokenCount) {
-  if (expr == NULL || tokenCount == NULL) return NULL;
-  int i = 0, capacity = 10, index = 0;
-  Token* tokens = malloc(capacity * (sizeof(Token)));
-  if (tokens == NULL) return NULL;
-  while (expr[i] != '\0') {
-    if (index >= capacity) {
-      capacity *= 2;
-      Token* temp = realloc(tokens, capacity * sizeof(Token));
-      if (temp == NULL) {
-        free(tokens);
-        return NULL;
-      }
-      tokens = temp;
+Token *tokenize(const char *expr, int *tokenCount){
+    Context ctx;
+    ctx.str = expr;
+    ctx.index = 0;
+    ctx.count = 0;
+    ctx.capacity = START_SIZE;
+    ctx.type = STATE_ERROR_HANDLING;
+    ctx.tokens = malloc(START_SIZE*sizeof(Token));
+    while(ctx.str[ctx.index] != '\0'){
+        if(ctx.capacity <= ctx.count+1 && !lekserRealloc(&ctx)){
+            freeTokens(&ctx);
+            return NULL;
+         }
+        ctx.type = determineNextState(&ctx);
+        if(!dispatchState(&ctx)){
+            ctx.count = 0;
+            *tokenCount = 0;
+            freeTokens(&ctx);
+            return NULL;
+        }
     }
-    if (isspace((unsigned char)expr[i])) {
-      i++;
-      continue;
-    } else if (isdigit((unsigned char)expr[i]) || expr[i] == '.') {
-      if (expr[i] == '.' && !isdigit((unsigned char)expr[i + 1])) {
-        tokens[index].type = TOKEN_UNKNOWN;
-        index++;
-        i++;
-        continue;
-      }
-      char* end;
-      tokens[index].type = TOKEN_NUMBER;
-      tokens[index].data.number = strtod(&expr[i], &end);
-      if (end == &expr[i]) {
-        tokens[index].type = TOKEN_UNKNOWN;
-        i++;
-        index++;
-        continue;
-      }
-      index++;
-      i = end - expr;
-      continue;
-    } else if (isalpha((unsigned char)expr[i])) {
-      int startIndex = i;
-      while (expr[i] != '\0' && isalpha((unsigned char)expr[i])) {
-        i++;
-      }
-      int len = i - startIndex;
-      if (len >= MAX_TOKEN_LEN) len = MAX_TOKEN_LEN - 1;
-      for (int j = 0; j < len; j++)
-        tokens[index].data.name[j] =
-            tolower((unsigned char)expr[startIndex + j]);
-      tokens[index].data.name[len] = '\0';
-
-      tokens[index].type = getFunction(tokens[index].data.name);
-      index++;
-      continue;
-    } else if (getOperatorFunctionType(expr[i]) != TOKEN_UNKNOWN) {
-      TokenType openType = getOperatorFunctionType(expr[i]);
-      if (openType == TOKEN_MINUS) {
-        if (index == 0 || isOperator(tokens[index - 1].type) ||
-            tokens[index - 1].type == TOKEN_OPEN_PAREN)
-          openType = TOKEN_UNAR_MINUS;
-      }
-      tokens[index].type = openType;
-      index++;
-      i++;
-      continue;
-    } else {
-      tokens[index].type = TOKEN_UNKNOWN;
-      index++;
-      i++;
-      continue;
-    }
-  }
-
-  *tokenCount = index;
-  return tokens;
+    *tokenCount = ctx.count;
+    return ctx.tokens;
 }
 
-static TokenType getFunction(const char* name) {
-#define X(str, enum_type) \
-  if (strcmp(name, str) == 0) return enum_type;
-  FUNCTION_LIST
-#undef X
-
-  return TOKEN_VARIABLE;
+static bool tokenizeSpace(Context *context){
+    context->index++;
+    return true;
 }
 
-static TokenType getOperatorFunctionType(char ch) {
+static bool tokenizeVariable(Context *context){
+    int count = context->count;
+    char *endPtr;
+    context->tokens[count].number = strtod(&context->str[context->index], &endPtr);
+    if(endPtr == &context->str[context->index]) return false;
+    context->tokens[count].token = TOKEN_NUMBER;
+    context->index += (endPtr - &context->str[context->index]);
+    context->count++;
+    return true;
+}
+
+static bool tokenizeOperator(Context *context){
+    TypeToken type = getOperatorFunctionType(context->str[context->index]);
+    context->tokens[context->count].token = type;
+    context->index++;
+    context->count++;
+    return true;
+}
+
+static TypeToken parseFunctionName(const char *name){
+    #define X(str, enum_type) if (strcmp(name, str) == 0) return enum_type;
+        FUNCTION_LIST
+    #undef X
+    return TOKEN_UNKNOWN;
+}
+
+static bool tokenizeFunction(Context *context){
+    int len = 0;
+    char buffer[MAX_TOKEN_LEN];
+    while(isalpha((unsigned char)context->str[context->index]) && len < MAX_TOKEN_LEN - 1){
+        buffer[len] = tolower((unsigned char)context->str[context->index]);
+        context->index++;
+        len++;
+    }
+    buffer[len] = '\0';
+    TypeToken type = parseFunctionName(buffer);
+    if(type == TOKEN_UNKNOWN) return false;
+    context->tokens[context->count].token = type;
+    context->count++;
+    return true;
+}
+   
+static bool tokenizeError(Context *context){
+    return false;
+}
+
+
+bool dispatchState(Context *context){
+    switch(context->type){
+        case STATE_SPACE_HANDLING:      return tokenizeSpace(context);
+        case STATE_VARIABLE_HANDLING:   return tokenizeVariable(context);
+        case STATE_OPERATOR_HANDLING:   return tokenizeOperator(context);  
+        case STATE_FUNCTION_HANDLING:   return tokenizeFunction(context); 
+        case STATE_ERROR_HANDLING:      return tokenizeError(context); 
+        default: return false;
+    }
+}
+
+
+static TypeToken getOperatorFunctionType(char ch) {
   switch (ch) {
     case '+':
       return TOKEN_PLUS;
@@ -119,58 +128,22 @@ static TokenType getOperatorFunctionType(char ch) {
   }
 }
 
-void freeTokens(Token* tokens) {
-  assert(tokens != NULL);
-  free(tokens);
+static bool lekserRealloc(Context *context){
+    int newCapacity = context->capacity*2;
+    Token *newTokens = realloc(context->tokens, newCapacity*sizeof(Token));
+    if(newTokens == NULL){
+        context->tokens = NULL;
+        return false;
+    }
+    context->tokens = newTokens;
+    context->capacity = newCapacity;
+    return true;
 }
 
-bool isOperator(TokenType type) {
-  return (isBinaryOperator(type) || type == TOKEN_UNAR_MINUS);
-}
-
-static bool isBinaryOperator(TokenType type) {
-  switch (type) {
-    case TOKEN_PLUS:
-      return true;
-    case TOKEN_MINUS:
-      return true;
-    case TOKEN_MULTIPLY:
-      return true;
-    case TOKEN_DIVISION:
-      return true;
-    case TOKEN_POW_OPERATOR:
-      return true;
-    case TOKEN_NTHROOT_OPERATOR:
-      return true;
-    default:
-      return false;
-  }
-}
-
-bool isFunction(TokenType type) {
-  return (type >= TOKEN_SIN && type <= TOKEN_NTHROOT_FUNCTION);
-}
-
-bool isVariable(TokenType type) { return (type == TOKEN_VARIABLE); }
-
-int getOperatorPriority(TokenType type) {
-  switch (type) {
-    case TOKEN_PLUS:
-    case TOKEN_MINUS:
-      return PRIORITY_PLUS_MINUS;
-    case TOKEN_DIVISION:
-    case TOKEN_MULTIPLY:
-      return PRIORITY_MULTIPLY_DIVISION;
-    case TOKEN_POW_OPERATOR:
-    case TOKEN_NTHROOT_OPERATOR:
-      return PRIORITY_POW_NTHROOT;
-    case TOKEN_UNAR_MINUS:
-      return PRIORITY_UNAR_MINUS;
-    default:
-      return PRIORITY_UNKNOWN;
-  }
-}
-
-bool isRightAssociative(TokenType type) {
-  return (type == TOKEN_POW_OPERATOR || type == TOKEN_UNAR_MINUS);
+static States determineNextState(Context *ctx){
+    return (isspace((unsigned char)ctx->str[ctx->index])) ? STATE_SPACE_HANDLING :
+            ((isdigit((unsigned char)ctx->str[ctx->index]) || ctx->str[ctx->index] == '.')) ? STATE_VARIABLE_HANDLING :
+                (getOperatorFunctionType(ctx->str[ctx->index]) != TOKEN_UNKNOWN) ? STATE_OPERATOR_HANDLING :
+                    (isalpha((unsigned char)ctx->str[ctx->index])) ? STATE_FUNCTION_HANDLING :
+                        STATE_ERROR_HANDLING;
 }
