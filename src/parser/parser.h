@@ -7,17 +7,17 @@
 #define START_SIZE 128
 
 #ifndef FUNCTION_LIST
-#define FUNCTION_LIST                   \
-  X("sin", TOKEN_SIN)                   \
-  X("cos", TOKEN_COS)                   \
-  X("tan", TOKEN_TAN)                   \
-  X( "cot",TOKEN_COT)                   \
-  X("arcsin", TOKEN_ARCSIN)             \
-  X("arccos", TOKEN_ARCCOS)             \
-  X("arctan", TOKEN_ARCTAN)             \
-  X("arccot", TOKEN_ARCCOT)             \
-  X("mypow", TOKEN_POW_FUNCTION)        \
-  X("nthroot", TOKEN_NTHROOT_FUNCTION)  
+#define FUNCTION_LIST            \
+  X("sin", TOKEN_SIN)            \
+  X("cos", TOKEN_COS)            \
+  X("tan", TOKEN_TAN)            \
+  X("cot", TOKEN_COT)            \
+  X("arcsin", TOKEN_ARCSIN)      \
+  X("arccos", TOKEN_ARCCOS)      \
+  X("arctan", TOKEN_ARCTAN)      \
+  X("arccot", TOKEN_ARCCOT)      \
+  X("mypow", TOKEN_POW_FUNCTION) \
+  X("nthroot", TOKEN_NTHROOT_FUNCTION)
 #endif
 
 typedef enum {
@@ -26,7 +26,7 @@ typedef enum {
   STATE_OPERATOR_HANDLING,
   STATE_FUNCTION_HANDLING,
   STATE_ERROR_HANDLING
-}States;
+} States;
 
 typedef enum {
   TOKEN_VARIABLE,
@@ -45,8 +45,8 @@ typedef enum {
   FUNCTION_LIST
 #undef X
 
-  // Parens
-  TOKEN_OPEN_PAREN,
+      // Parens
+      TOKEN_OPEN_PAREN,
   TOKEN_CLOSE_PAREN,
 
   // Special Tokens
@@ -57,10 +57,10 @@ typedef enum {
 
 typedef struct {
   TypeToken token;
-  union{
+  union {
     double number;
     char name[MAX_TOKEN_LEN];
-  };
+  } Val;
 } Token;
 
 typedef struct {
@@ -68,23 +68,32 @@ typedef struct {
   int index;
   int count;
   States type;
-  Token *tokens;
+  Token* tokens;
   int capacity;
 } Context;
 
+typedef struct {
+  int precedence;
+  bool isAssociative;
+  bool isOperator;
+  bool isRightAssociative;
+  bool isFunction;
+} TokenProperties;
 
 /*********************************/
 /*     FUNCTION PROTOTYPES       */
 /*                               */
 /******************************* */
-bool dispatchState(Context *context);
-Token *tokenize(const char *expr, int *tokenCount);
+bool dispatchState(Context* context);
+Token* tokenize(const char* expr, int* tokenCount);
 
 bool isOperator(TypeToken type);
 bool isFunction(TypeToken type);
-bool isVariable(TypeToken type);
+bool isOperand(TypeToken type);
 bool isRightAssociative(TypeToken type);
 
-void freeTokens(Context *context);
+void freeTokens(Context* context);
+
+bool parserToRPN(const Context* inCtx, Context* outCtx);
 
 #endif
