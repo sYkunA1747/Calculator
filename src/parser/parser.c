@@ -1,118 +1,165 @@
 #include "parser.h"
 
+#include <stdbool.h>
 #include <stdlib.h>
 
 #include "stack.h"
 
-Token* parserToRPN(const Token* inTokens, int inCount, int* outCount,
-                   ErrorCode* err) {
-  if (inTokens == NULL || outCount == NULL) return NULL;
-  if (err != NULL) *err = ERR_OK;
+bool isOperator(TypeToken type);
+bool isFunction(TypeToken type);
+bool isVariable(TypeToken type);
+bool isRightAssociative(TypeToken type);
+
+static TokenProperties tokenProps[] = {
+    [TOKEN_PLUS] = {.precedence = 2,
+                    .isAssociative = false,
+                    .isOperator = true},
+    [TOKEN_MINUS] = {.precedence = 2,
+                     .isAssociative = false,
+                     .isOperator = true},
+    [TOKEN_UNAR_MINUS] = {.precedence = 4,
+                          .isAssociative = true,
+                          .isOperator = true},
+    [TOKEN_MULTIPLY] = {.precedence = 3,
+                        .isAssociative = false,
+                        .isOperator = true},
+    [TOKEN_DIVISION] = {.precedence = 3,
+                        .isAssociative = false,
+                        .isOperator = true},
+    [TOKEN_POW_OPERATOR] = {.precedence = 4,
+                            .isAssociative = true,
+                            .isOperator = true},
+    [TOKEN_NTHROOT_OPERATOR] = {.precedence = 4,
+                                .isAssociative = true,
+                                .isOperator = true},
+// *function
+#define X(str, enum_type) \
+  [enum_type] = {.precedence = 5, .isAssociative = true, .isFunction = true},
+    FUNCTION_LIST
+#undef X
+};
+
+int totalTokens = sizeof(tokenProps) / sizeof(tokenProps[0]);
+
+bool parserToRPN(const Context* inCtx, Context* outCtx) {
+  int i = 0;
+  Token topToken;
   TokenStack opStack;
-  StackStatus status = stackInit(&opStack, inCount);
-  if (status != STACK_OK) {
-    if (err != NULL) *err = ERROR_MEMORY_ALLOCATION;
-    return NULL;
+  outCtx->count = 0;
+  outCtx->capacity = START_SIZE;
+  outCtx->tokens = malloc(outCtx->capacity * sizeof(Token));
+  if (!outCtx->tokens) return false;
+  if (stackInit(&opStack, inCtx->count) != STACK_OK) {
+    freeTokens(outCtx);
+    return false;
   }
-  Token* output = malloc(inCount * (sizeof(Token)));
-  if (output == NULL) {
-    if (err != NULL) *err = ERROR_MEMORY_ALLOCATION;
-    stackFree(&opStack);
-    return NULL;
-  }
-  int outIndex = 0;
-  for (int i = 0; i < inCount; i++) {
-    if (isVariable(inTokens[i].type) || inTokens[i].type == TOKEN_NUMBER) {
-      output[outIndex] = inTokens[i];
-      outIndex++;
-      continue;
-    } else if (inTokens[i].type == TOKEN_OPEN_PAREN) {
-      if (stackPush(&opStack, inTokens[i]) != STACK_OK) {
-        if (err != NULL) *err = ERROR_MEMORY_ALLOCATION;
-        free(output);
-        stackFree(&opStack);
-        return NULL;
-      }
-      continue;
-    } else if (isFunction(inTokens[i].type)) {
-      if (stackPush(&opStack, inTokens[i]) != STACK_OK) {
-        if (err != NULL) *err = ERROR_MEMORY_ALLOCATION;
-        free(output);
-        stackFree(&opStack);
-        return NULL;
-      }
-      continue;
-    } else if (isOperator(inTokens[i].type)) {
-      Token topToken;
-      while (!stackIsEmpty(&opStack) &&
-             stackPeek(&opStack, &topToken) == STACK_OK) {
-        int topPri = getOperatorPriority(topToken.type);
-        int currPri = getOperatorPriority(inTokens[i].type);
-
-        if (topPri > currPri ||
-            (topPri == currPri && !isRightAssociative(inTokens[i].type))) {
+  while (i < inCtx->count) {
+    Token currentToken = inCtx->tokens[i];
+    switch (currentToken.token) {
+      case TOKEN_NUMBER:
+      case TOKEN_VARIABLE:
+        outCtx->tokens[outCtx->count++] = currentToken;
+        break;
+      case TOKEN_OPEN_PAREN:
+        stackPush(&opStack, currentToken);
+        break;
+#define X(str, enum_type) case enum_type:
+        FUNCTION_LIST
+#undef X
+        stackPush(&opStack, currentToken);
+        break;
+      case TOKEN_CLOSE_PAREN:
+        while (!stackIsEmpty(&opStack) &&
+               stackPeek(&opStack, &topToken) == STACK_OK &&
+               topToken.token != TOKEN_OPEN_PAREN) {
           stackPop(&opStack, &topToken);
-          output[outIndex] = topToken;
-          outIndex++;
-        } else {
-          break;
+          outCtx->tokens[outCtx->count++] = topToken;
         }
-      }
-      if (stackPush(&opStack, inTokens[i]) != STACK_OK) {
-        if (err != NULL) *err = ERROR_MEMORY_ALLOCATION;
-        free(output);
-        stackFree(&opStack);
-        return NULL;
-      }
-      continue;
-    } else if (inTokens[i].type == TOKEN_CLOSE_PAREN) {
-      Token topToken;
-      while (!stackIsEmpty(&opStack) &&
-             stackPeek(&opStack, &topToken) == STACK_OK) {
-        if (topToken.type != TOKEN_OPEN_PAREN) {
+        if (stackIsEmpty(&opStack)) {
+          stackFree(&opStack);
+          freeTokens(outCtx);
+          return false;
+        }
+        stackPop(&opStack, &topToken);
+        if (!stackIsEmpty(&opStack) &&
+            stackPeek(&opStack, &topToken) == STACK_OK &&
+            isFunction(topToken.token)) {
           stackPop(&opStack, &topToken);
-          output[outIndex] = topToken;
-          outIndex++;
-        } else {
-          break;
+          outCtx->tokens[outCtx->count++] = topToken;
         }
-      }
-      if (stackPop(&opStack, &topToken) != STACK_OK ||
-          topToken.type != TOKEN_OPEN_PAREN) {
-        if (err != NULL) *err = ERROR_PARSER_CLOSE_PAREN_UNBALANCED;
-        free(output);
-        stackFree(&opStack);
-        return NULL;
-      }
-      if (!stackIsEmpty(&opStack) &&
-          stackPeek(&opStack, &topToken) == STACK_OK) {
-        if (isFunction(topToken.type)) {
+        break;
+      case TOKEN_PLUS:
+      case TOKEN_MINUS:
+      case TOKEN_MULTIPLY:
+      case TOKEN_DIVISION:
+      case TOKEN_POW_OPERATOR:
+      case TOKEN_UNAR_MINUS:
+      case TOKEN_NTHROOT_OPERATOR:
+        while (!stackIsEmpty(&opStack) &&
+               stackPeek(&opStack, &topToken) == STACK_OK &&
+               (isOperator(topToken.token) || isFunction(topToken.token)) &&
+               ((!isRightAssociative(currentToken.token) &&
+                 tokenProps[topToken.token].precedence >=
+                     tokenProps[currentToken.token].precedence) ||
+                (isRightAssociative(currentToken.token) &&
+                 tokenProps[topToken.token].precedence >
+                     tokenProps[currentToken.token].precedence))) {
           stackPop(&opStack, &topToken);
-          output[outIndex] = topToken;
-          outIndex++;
+          outCtx->tokens[outCtx->count++] = topToken;
         }
-      }
-      continue;
+        stackPush(&opStack, currentToken);
+        break;
+      default:
+        stackFree(&opStack);
+        freeTokens(outCtx);
+        return false;
     }
+    i++;
   }
-
   while (!stackIsEmpty(&opStack)) {
-    Token topToken;
     stackPop(&opStack, &topToken);
-
-    if (topToken.type == TOKEN_OPEN_PAREN) {
-      if (err != NULL) *err = ERROR_PARSER_OPEN_PAREN_UNBALANCED;
-      free(output);
+    if (topToken.token == TOKEN_OPEN_PAREN) {
       stackFree(&opStack);
-      return NULL;
+      freeTokens(outCtx);
+      return false;
     }
-    output[outIndex] = topToken;
-    outIndex++;
+    outCtx->tokens[outCtx->count++] = topToken;
   }
-
-  if (err != NULL) *err = ERR_OK;
-
-  *outCount = outIndex;
   stackFree(&opStack);
-  return output;
+  return true;
+}
+
+bool isOperator(TypeToken type) {
+  if (type < 0 ||
+      type >= (TypeToken)(sizeof(tokenProps) / sizeof(tokenProps[0])))
+    return false;
+  return tokenProps[type].isOperator;
+}
+
+bool isFunction(TypeToken type) {
+  if (type < 0 ||
+      type >= (TypeToken)(sizeof(tokenProps) / sizeof(tokenProps[0])))
+    return false;
+  return tokenProps[type].isFunction;
+}
+
+bool isRightAssociative(TypeToken type) {
+  if (type < 0 ||
+      type >= (TypeToken)(sizeof(tokenProps) / sizeof(tokenProps[0])))
+    return false;
+  return tokenProps[type].isAssociative;
+}
+
+bool isOperand(TypeToken type) {
+  if (type < 0 ||
+      type >= (TypeToken)(sizeof(tokenProps) / sizeof(tokenProps[0])))
+    return false;
+  return (type == TOKEN_NUMBER || type == TOKEN_VARIABLE);
+}
+
+void freeTokens(Context* context) {
+  if (context && context->tokens) {
+    free(context->tokens);
+    context->tokens = NULL;
+  }
 }

@@ -3,15 +3,8 @@
 
 #include <stdbool.h>
 
-#include "../errorhandling/errorCode.h"
-
-#define MAX_TOKEN_LEN 32
-
-#define PRIORITY_PLUS_MINUS 1
-#define PRIORITY_MULTIPLY_DIVISION 2
-#define PRIORITY_POW_NTHROOT 3
-#define PRIORITY_UNAR_MINUS 4
-#define PRIORITY_UNKNOWN 0
+#define MAX_TOKEN_LEN 22
+#define START_SIZE 128
 
 #ifndef FUNCTION_LIST
 #define FUNCTION_LIST            \
@@ -28,7 +21,15 @@
 #endif
 
 typedef enum {
-  // number
+  STATE_SPACE_HANDLING,
+  STATE_VARIABLE_HANDLING,
+  STATE_OPERATOR_HANDLING,
+  STATE_FUNCTION_HANDLING,
+  STATE_ERROR_HANDLING
+} States;
+
+typedef enum {
+  TOKEN_VARIABLE,
   TOKEN_NUMBER,
 
   // Operator
@@ -39,44 +40,60 @@ typedef enum {
   TOKEN_DIVISION,
   TOKEN_POW_OPERATOR,
   TOKEN_NTHROOT_OPERATOR,
-// fucntions
 
 #define X(str, enum_type) enum_type,
   FUNCTION_LIST
 #undef X
 
-      // Variable
-      TOKEN_VARIABLE,
-
-  // Parens
-  TOKEN_OPEN_PAREN,
+      // Parens
+      TOKEN_OPEN_PAREN,
   TOKEN_CLOSE_PAREN,
 
   // Special Tokens
   TOKEN_UNKNOWN,
   TOKEN_EOF
-} TokenType;
+
+} TypeToken;
 
 typedef struct {
-  TokenType type;
+  TypeToken token;
   union {
     double number;
     char name[MAX_TOKEN_LEN];
-    int priority;
-  } data;
+  } Val;
 } Token;
 
-bool isOperator(TokenType type);
-bool isFunction(TokenType type);
-bool isVariable(TokenType type);
-bool isRightAssociative(TokenType type);
+typedef struct {
+  const char* str;
+  int index;
+  int count;
+  States type;
+  Token* tokens;
+  int capacity;
+} Context;
 
-int getOperatorPriority(TokenType type);
+typedef struct {
+  int precedence;
+  bool isAssociative;
+  bool isOperator;
+  bool isRightAssociative;
+  bool isFunction;
+} TokenProperties;
 
+/*********************************/
+/*     FUNCTION PROTOTYPES       */
+/*                               */
+/******************************* */
+bool dispatchState(Context* context);
 Token* tokenize(const char* expr, int* tokenCount);
-void freeTokens(Token* tokens);
 
-Token* parserToRPN(const Token* inTokens, int inCount, int* outCount,
-                   ErrorCode* err);
+bool isOperator(TypeToken type);
+bool isFunction(TypeToken type);
+bool isOperand(TypeToken type);
+bool isRightAssociative(TypeToken type);
+
+void freeTokens(Context* context);
+
+bool parserToRPN(const Context* inCtx, Context* outCtx);
 
 #endif
